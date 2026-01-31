@@ -94,22 +94,29 @@ except ImportError:
 load_dotenv()
 
 def _get_secret(name: str) -> str:
-    """Read secret from env first, then from st.secrets (Streamlit Cloud). Safe if st.secrets missing."""
+    """Read secret from env first, then from st.secrets (Streamlit Cloud). Safe if st.secrets missing or raises."""
     v = (os.environ.get(name) or "").strip()
-    if not v and hasattr(st, "secrets") and st.secrets:
+    if not v:
         try:
-            v = (st.secrets.get(name) or "").strip()
+            if hasattr(st, "secrets") and st.secrets:
+                v = (st.secrets.get(name) or "").strip()
         except Exception:
             pass
     return v or ""
 
 # Populate env from st.secrets so Supabase client and others see them when deployed on Streamlit Cloud
-for _k in ("SARVAM_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"):
-    _v = _get_secret(_k)
-    if _v:
-        os.environ[_k] = _v
+try:
+    for _k in ("SARVAM_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"):
+        _v = _get_secret(_k)
+        if _v:
+            os.environ[_k] = _v
+except Exception:
+    pass
 
-SARVAM_API_KEY = _get_secret("SARVAM_API_KEY")
+try:
+    SARVAM_API_KEY = _get_secret("SARVAM_API_KEY")
+except Exception:
+    SARVAM_API_KEY = ""
 
 # --- Session State Initialization ---
 if 'conversation' not in st.session_state:
